@@ -4,9 +4,14 @@ module.exports = {
       id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
-        allowNull: false
+        allowNull: false,
+        autoIncrement: true
       },
       name: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
+      email: {
         type: Sequelize.STRING,
         allowNull: false
       },
@@ -14,11 +19,11 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
-      created: {
+      created_at: {
         type: Sequelize.DATE,
         allowNull: false
       },
-      updated: {
+      updated_at: {
         type: Sequelize.DATE,
         allowNull: false
       }
