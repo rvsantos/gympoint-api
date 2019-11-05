@@ -26,6 +26,14 @@ module.exports = {
       weight: {
         type: Sequelize.DECIMAL(10, 2),
         allowNull: false
+      },
+      created_at: {
+        type: Sequelize.DATE,
+        allowNull: false
+      },
+      updated_at: {
+        type: Sequelize.DATE,
+        allowNull: false
       }
     });
   },
