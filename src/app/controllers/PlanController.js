@@ -61,6 +61,16 @@ class PlanController {
       price
     });
   }
+
+  async delete(req, res) {
+    const { id } = req.params;
+
+    const plan = await Plan.findByPk(id);
+
+    plan.destroy();
+
+    return res.send();
+  }
 }
 
 export default new PlanController();
