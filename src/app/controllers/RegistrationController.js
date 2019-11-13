@@ -5,6 +5,24 @@ import Student from '../models/Student';
 import Registration from '../models/Registration';
 
 class RegistrationController {
+  async index(req, res) {
+    const registrations = await Registration.findAll({
+      attributes: ['id', 'start_date', 'end_date', 'price'],
+      include: [
+        {
+          model: Student,
+          attributes: ['name', 'age', 'email']
+        },
+        {
+          model: Plan,
+          attributes: ['title', 'duration', 'price']
+        }
+      ]
+    });
+
+    return res.json(registrations);
+  }
+
   async store(req, res) {
     const schema = Yup.object().shape({
       start_date: Yup.date().required(),
