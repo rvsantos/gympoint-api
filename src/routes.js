@@ -12,8 +12,11 @@ routes.post('/sessions', SessionController.store);
 
 routes.use(authMiddlewares);
 
+// Students
 routes.post('/students', StudentController.store);
 
+// Plans
 routes.post('/plans', PlanController.store);
+routes.get('/plans', PlanController.index);
 
 export default routes;
