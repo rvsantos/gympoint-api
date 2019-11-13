@@ -1,6 +1,5 @@
 import * as Yup from 'yup';
 import Plan from '../models/Plan';
-import User from '../models/User';
 
 class PlanController {
   async index(req, res) {
