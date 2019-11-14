@@ -8,14 +8,15 @@ class RegistrationController {
   async index(req, res) {
     const registrations = await Registration.findAll({
       attributes: ['id', 'start_date', 'end_date', 'price'],
+      order: [['updated_at', 'desc']],
       include: [
         {
           model: Student,
-          attributes: ['name', 'age', 'email']
+          attributes: ['id', 'name', 'age', 'email']
         },
         {
           model: Plan,
-          attributes: ['title', 'duration', 'price']
+          attributes: ['id', 'title', 'duration', 'price']
         }
       ]
     });
@@ -26,8 +27,12 @@ class RegistrationController {
   async store(req, res) {
     const schema = Yup.object().shape({
       start_date: Yup.date().required(),
-      student_id: Yup.number().required(),
-      plan_id: Yup.number().required()
+      student_id: Yup.number()
+        .required()
+        .positive(),
+      plan_id: Yup.number()
+        .required()
+        .positive()
     });
 
     if (!(await schema.isValid(req.body))) {
@@ -35,6 +40,8 @@ class RegistrationController {
     }
 
     const { start_date, student_id, plan_id } = req.body;
+    const checkStudentExists = await Student.findByPk(student_id);
+    const checkPlanExists = await Plan.findByPk(plan_id);
 
     // Verify if date is before now
     if (isBefore(parseISO(start_date), new Date())) {
@@ -42,17 +49,8 @@ class RegistrationController {
     }
 
     // Check if student exists
-    const checkStudentExists = await Student.findByPk(student_id);
-
-    if (!checkStudentExists) {
-      return res.status(400).json({ error: 'Student does not exists' });
-    }
-
-    // Check if plan exists
-    const checkPlanExists = await Plan.findByPk(plan_id);
-
-    if (!checkPlanExists) {
-      return res.status(401).json({ error: 'Plan does not exists' });
+    if (!checkPlanExists || !checkStudentExists) {
+      return res.status(401).json({ error: 'Plan/Student does not exists' });
     }
 
     // Check if student already registered
@@ -66,7 +64,6 @@ class RegistrationController {
 
     const { price, duration } = checkPlanExists;
     const priceTotal = price * duration;
-
     const end_date = addMonths(parseISO(start_date), duration);
 
     const registration = await Registration.create({
@@ -78,6 +75,64 @@ class RegistrationController {
     });
 
     return res.json(registration);
+  }
+
+  async update(req, res) {
+    const { id } = req.params;
+    const schema = Yup.object().shape({
+      start_date: Yup.date(),
+      student_id: Yup.number().positive(),
+      plan_id: Yup.number().positive()
+    });
+
+    if (!(await schema.isValid(req.body))) {
+      return res.status(400).json({ error: 'Validation fails' });
+    }
+
+    const { start_date, student_id, plan_id } = req.body;
+
+    const registration = await Registration.findOne({
+      where: { student_id: id }
+    });
+
+    if (!registration) {
+      return res.status(401).json({ error: 'Unregistered student' });
+    }
+
+    if (student_id && registration.student_id !== student_id) {
+      return res.status(400).json({ error: 'Cannot change student_id' });
+    }
+
+    if (plan_id && plan_id !== registration.plan_id) {
+      const checkPlanExists = await Plan.findByPk(plan_id);
+      if (!checkPlanExists) {
+        return res.status(400).json({ error: 'Plan does not exists' });
+      }
+    }
+
+    if (start_date && start_date !== registration.start_date) {
+      if (isBefore(parseISO(start_date), new Date())) {
+        return res.status(400).json({ error: 'Invalid date' });
+      }
+    }
+
+    const { duration, price } = await Plan.findByPk(plan_id);
+    const priceTotal = price * duration;
+    const end_date = addMonths(parseISO(start_date), duration);
+
+    const { id: registrationId } = registration.update({
+      ...req.body,
+      price: priceTotal,
+      end_date
+    });
+
+    return res.json({
+      registrationId,
+      student_id,
+      plan_id,
+      start_date,
+      end_date
+    });
   }
 }
 
