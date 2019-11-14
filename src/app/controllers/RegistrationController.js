@@ -6,9 +6,19 @@ import Registration from '../models/Registration';
 
 class RegistrationController {
   async index(req, res) {
+    const status = !req.params.inactive ? 'active' : 'inactive';
+
     const registrations = await Registration.findAll({
-      attributes: ['id', 'start_date', 'end_date', 'price'],
-      order: [['updated_at', 'desc']],
+      where: { status },
+      attributes: [
+        'id',
+        'start_date',
+        'end_date',
+        'price',
+        'status',
+        'canceled_at'
+      ],
+      order: [['id', 'desc']],
       include: [
         {
           model: Student,
@@ -133,6 +143,37 @@ class RegistrationController {
       start_date,
       end_date
     });
+  }
+
+  async delete(req, res) {
+    const { id } = req.params;
+
+    const registration = await Registration.findOne({
+      where: { student_id: id },
+      attributes: ['id', 'start_date', 'end_date', 'price', 'status'],
+      order: [['canceled_at', 'desc']],
+      include: [
+        {
+          model: Student,
+          attributes: ['id', 'name', 'age', 'email']
+        },
+        {
+          model: Plan,
+          attributes: ['id', 'title', 'duration', 'price']
+        }
+      ]
+    });
+
+    if (!registration) {
+      return res.status(401).json({ error: 'Unregistered student' });
+    }
+
+    registration.canceled_at = new Date();
+    registration.status = 'inactive';
+
+    await registration.save();
+
+    return res.json(registration);
   }
 }
 
