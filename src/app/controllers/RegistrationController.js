@@ -4,6 +4,8 @@ import Plan from '../models/Plan';
 import Student from '../models/Student';
 import Registration from '../models/Registration';
 
+import Mail from '../../lib/Mail';
+
 class RegistrationController {
   async index(req, res) {
     const status = !req.params.inactive ? 'active' : 'inactive';
@@ -50,8 +52,11 @@ class RegistrationController {
     }
 
     const { start_date, student_id, plan_id } = req.body;
-    const checkStudentExists = await Student.findByPk(student_id);
     const checkPlanExists = await Plan.findByPk(plan_id);
+
+    const student = await Student.findByPk(student_id, {
+      attributes: ['name', 'email']
+    });
 
     // Verify if date is before now
     if (isBefore(parseISO(start_date), new Date())) {
@@ -59,7 +64,7 @@ class RegistrationController {
     }
 
     // Check if student exists
-    if (!checkPlanExists || !checkStudentExists) {
+    if (!checkPlanExists || !student) {
       return res.status(401).json({ error: 'Plan/Student does not exists' });
     }
 
@@ -82,6 +87,12 @@ class RegistrationController {
       price: priceTotal,
       student_id,
       plan_id
+    });
+
+    await Mail.sendMail({
+      to: `${student.name} <${student.email}>`,
+      subject: 'Cadastro efetuado',
+      text: 'Parabens seu cadastro foi efetuado com sucesso.'
     });
 
     return res.json(registration);
