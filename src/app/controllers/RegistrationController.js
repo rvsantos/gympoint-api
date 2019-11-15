@@ -1,5 +1,6 @@
 import * as Yup from 'yup';
-import { addMonths, parseISO, isBefore } from 'date-fns';
+import { addMonths, parseISO, isBefore, format } from 'date-fns';
+import { pt } from 'date-fns/locale';
 import Plan from '../models/Plan';
 import Student from '../models/Student';
 import Registration from '../models/Registration';
@@ -77,7 +78,7 @@ class RegistrationController {
       return res.status(401).json({ error: 'Student already registered' });
     }
 
-    const { price, duration } = checkPlanExists;
+    const { price, duration, title } = checkPlanExists;
     const priceTotal = price * duration;
     const end_date = addMonths(parseISO(start_date), duration);
 
@@ -92,7 +93,14 @@ class RegistrationController {
     await Mail.sendMail({
       to: `${student.name} <${student.email}>`,
       subject: 'Cadastro efetuado',
-      text: 'Parabens seu cadastro foi efetuado com sucesso.'
+      template: 'registration',
+      context: {
+        plan: title,
+        end_date: format(end_date, 'dd/MM/yyyy', {
+          locale: pt
+        }),
+        price: `R$ ${priceTotal}`
+      }
     });
 
     return res.json(registration);
