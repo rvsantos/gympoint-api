@@ -1,11 +1,22 @@
 import * as Yup from 'yup';
-import { Op } from 'sequelize';
 import HelpOrder from '../models/HelpOrder';
+import Student from '../models/Student';
 
 class HelpOrderController {
   async index(req, res) {
+    const { student_id } = req.params;
+
+    const checkStudent = await Student.findByPk(student_id);
+
+    if (!checkStudent && student_id !== undefined) {
+      return res.status(422).json({ errors: 'Student does not exists.' });
+    }
+
+    const optinalWhere =
+      student_id === undefined ? { answer: null } : { student_id };
+
     const helpOrders = await HelpOrder.findAll({
-      where: { answer: null },
+      where: optinalWhere,
       order: [['updated_at', 'DESC']]
     });
 
