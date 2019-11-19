@@ -1,7 +1,17 @@
 import * as Yup from 'yup';
+import { Op } from 'sequelize';
 import HelpOrder from '../models/HelpOrder';
 
 class HelpOrderController {
+  async index(req, res) {
+    const helpOrders = await HelpOrder.findAll({
+      where: { answer: null },
+      order: [['updated_at', 'DESC']]
+    });
+
+    return res.json(helpOrders);
+  }
+
   async store(req, res) {
     const schema = Yup.object().shape({
       question: Yup.string().required()
