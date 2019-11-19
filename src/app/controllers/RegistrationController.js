@@ -1,11 +1,11 @@
 import * as Yup from 'yup';
-import { addMonths, parseISO, isBefore, format } from 'date-fns';
-import { pt } from 'date-fns/locale';
+import { addMonths, parseISO, isBefore } from 'date-fns';
 import Plan from '../models/Plan';
 import Student from '../models/Student';
 import Registration from '../models/Registration';
 
-import Mail from '../../lib/Mail';
+import RegistrationMail from '../jobs/RegistrationMail';
+import Queue from '../../lib/Queue';
 
 class RegistrationController {
   async index(req, res) {
@@ -90,17 +90,11 @@ class RegistrationController {
       plan_id
     });
 
-    await Mail.sendMail({
-      to: `${student.name} <${student.email}>`,
-      subject: 'Cadastro efetuado',
-      template: 'registration',
-      context: {
-        plan: title,
-        end_date: format(end_date, 'dd/MM/yyyy', {
-          locale: pt
-        }),
-        price: `R$ ${priceTotal}`
-      }
+    await Queue.add(RegistrationMail.key, {
+      student,
+      title,
+      end_date,
+      priceTotal
     });
 
     return res.json(registration);
